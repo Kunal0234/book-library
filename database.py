@@ -19,22 +19,3 @@ class Book(Base):
 
 Base.metadata.create_all(bind=engine)
 db = SessionLocal()
-
-# book = Book(
-#     title="The Great Gatsby",
-#     author="F. Scott Fitzgerald",
-#     category="Fiction",
-#     published_year=1925,
-#     available=True
-# )
-# db.add(book)
-# db.commit()
-books = db.query(Book).all()
-
-for book in books:
-    print(book.id, book.title, book.author, book.category)
-
-book = db.query(Book).filter(Book.id == 2).first()
-
-print(book.title)
-print(book.author)

@@ -1,15 +1,16 @@
-from pydantic import BaseModel,Field
+from pydantic import BaseModel
 from fastapi import FastAPI,HTTPException
+from database import Book, SessionLocal 
 
 app = FastAPI()
 
-temp_db = []
+
 
 @app.get("/")
 def func():
     return {'message':"Hello world"}
 
-class Book(BaseModel):
+class BookSchema(BaseModel):
 
     title:str
     author:str
@@ -18,45 +19,123 @@ class Book(BaseModel):
     available:bool 
 
 @app.post("/book")
-def insert_book_data(book_data : Book):
-  temp_db.append(book_data)
-  return book_data
+def insert_book_data(book_data: BookSchema):
+    db = SessionLocal()
+
+    book = Book(
+        title=book_data.title,
+        author=book_data.author,
+        category=book_data.category,
+        published_year=book_data.published_year,
+        available=book_data.available
+    )
+
+    db.add(book)
+    db.commit()
+    db.refresh(book)
+
+    result = {
+        "id": book.id,
+        "title": book.title,
+        "author": book.author,
+        "category": book.category,
+        "published_year": book.published_year,
+        "available": book.available
+    }
+
+    db.close()
+
+    return result
 
 @app.get("/books")
 def show_books():
-   return temp_db
+  db = SessionLocal()
+  books = db.query(Book).all() 
+  
+
+  db.close()
+  return books 
+
+
 
 @app.get("/books/{book_id}")
 def show_one_book(book_id: int):
-    if book_id < 0 or book_id >= len(temp_db):
+    db = SessionLocal()
+
+    book = db.query(Book).filter(Book.id == book_id).first()
+
+    if book is None:
+        db.close()
         raise HTTPException(
             status_code=404,
             detail="Book not found"
         )
 
-    return temp_db[book_id]
+    result = {
+        "id": book.id,
+        "title": book.title,
+        "author": book.author,
+        "category": book.category,
+        "published_year": book.published_year,
+        "available": book.available
+    }
+
+    db.close()
+
+    return result
 
 @app.put("/books/{book_id}")
-def update_book(book_id: int, update_data: Book):
-    if book_id < 0 or book_id >= len(temp_db):
+def update_book(book_id: int, update_data: BookSchema):
+    db = SessionLocal()
+
+    book = db.query(Book).filter(Book.id == book_id).first()
+
+    if book is None:
+        db.close()
         raise HTTPException(
             status_code=404,
             detail="Book not found"
         )
 
-    temp_db[book_id] = update_data
+    book.title = update_data.title
+    book.author = update_data.author
+    book.category = update_data.category
+    book.published_year = update_data.published_year
+    book.available = update_data.available
 
-    return update_data
+    db.commit()
+    db.refresh(book)
+
+    result = {
+        "id": book.id,
+        "title": book.title,
+        "author": book.author,
+        "category": book.category,
+        "published_year": book.published_year,
+        "available": book.available
+    }
+
+    db.close()
+
+    return result
     
 @app.delete("/books/{book_id}")
 def delete_book(book_id: int):
-    if book_id < 0 or book_id >= len(temp_db):
+    db = SessionLocal()
+
+    book = db.query(Book).filter(Book.id == book_id).first()
+
+    if book is None:
+        db.close()
         raise HTTPException(
             status_code=404,
             detail="Book not found"
         )
 
-    temp_db.pop(book_id)
+    db.delete(book)
+    db.commit()
+
+    db.close()
 
     return {"message": "Book successfully deleted"}
 
