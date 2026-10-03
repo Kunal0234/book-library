@@ -1,7 +1,7 @@
-from pydantic import BaseModel
-from fastapi import FastAPI,HTTPException
-from database import Book, SessionLocal 
-
+from fastapi import FastAPI, HTTPException
+from database import SessionLocal
+from models import Book
+from schemas import BookSchema
 app = FastAPI()
 
 
@@ -10,13 +10,7 @@ app = FastAPI()
 def func():
     return {'message':"Hello world"}
 
-class BookSchema(BaseModel):
-
-    title:str
-    author:str
-    category:str
-    published_year:int
-    available:bool 
+ 
 
 @app.post("/book")
 def insert_book_data(book_data: BookSchema):
