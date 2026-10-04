@@ -1,7 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from database import SessionLocal
 from models import Book
-from schemas import BookSchema
+from schemas import BookSchema, BookResponse, DeleteResponse
+from typing import Optional
+
 app = FastAPI()
 
 
@@ -12,7 +14,7 @@ def func():
 
  
 
-@app.post("/book")
+@app.post("/book",response_model=BookResponse)
 def insert_book_data(book_data: BookSchema):
     db = SessionLocal()
 
@@ -28,31 +30,35 @@ def insert_book_data(book_data: BookSchema):
     db.commit()
     db.refresh(book)
 
-    result = {
-        "id": book.id,
-        "title": book.title,
-        "author": book.author,
-        "category": book.category,
-        "published_year": book.published_year,
-        "available": book.available
-    }
+   
 
     db.close()
 
-    return result
+    return book
 
-@app.get("/books")
-def show_books():
-  db = SessionLocal()
-  books = db.query(Book).all() 
-  
+@app.get("/books",response_model=list[BookResponse])
+def show_books(category: Optional[str] = None, author: Optional[str] = None,available: Optional[bool] = None):
+    db = SessionLocal()
+    query = db.query(Book)
 
-  db.close()
-  return books 
+    if category:
+        query = query.filter(Book.category == category)
 
+    if author:
+        query = query.filter(Book.author == author)
 
+    if available is not None:
+        query = query.filter(Book.available == available)
 
-@app.get("/books/{book_id}")
+    books = query.all()
+    db.close()
+    return books
+
+@app.get("/test")
+def test(category: str):
+    return {"category": category}
+
+@app.get("/books/{book_id}",response_model=BookResponse)
 def show_one_book(book_id: int):
     db = SessionLocal()
 
@@ -65,20 +71,12 @@ def show_one_book(book_id: int):
             detail="Book not found"
         )
 
-    result = {
-        "id": book.id,
-        "title": book.title,
-        "author": book.author,
-        "category": book.category,
-        "published_year": book.published_year,
-        "available": book.available
-    }
 
     db.close()
 
-    return result
+    return book
 
-@app.put("/books/{book_id}")
+@app.put("/books/{book_id}",response_model=BookResponse)
 def update_book(book_id: int, update_data: BookSchema):
     db = SessionLocal()
 
@@ -100,20 +98,13 @@ def update_book(book_id: int, update_data: BookSchema):
     db.commit()
     db.refresh(book)
 
-    result = {
-        "id": book.id,
-        "title": book.title,
-        "author": book.author,
-        "category": book.category,
-        "published_year": book.published_year,
-        "available": book.available
-    }
+    
 
     db.close()
 
-    return result
+    return book
     
-@app.delete("/books/{book_id}")
+@app.delete("/books/{book_id}", response_model=DeleteResponse)
 def delete_book(book_id: int):
     db = SessionLocal()
 

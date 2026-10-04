@@ -5,3 +5,14 @@ class BookSchema(BaseModel):
     category: str
     published_year: int = Field(gt=0)
     available: bool
+
+class BookResponse(BaseModel):
+    id: int
+    title: str
+    author: str
+    category: str
+    published_year: int
+    available: bool
+
+class DeleteResponse(BaseModel):
+    message: str
