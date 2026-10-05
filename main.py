@@ -8,12 +8,6 @@ app = FastAPI()
 
 
 
-@app.get("/")
-def func():
-    return {'message':"Hello world"}
-
- 
-
 @app.post("/book",response_model=BookResponse)
 def insert_book_data(book_data: BookSchema):
     db = SessionLocal()
@@ -29,15 +23,18 @@ def insert_book_data(book_data: BookSchema):
     db.add(book)
     db.commit()
     db.refresh(book)
-
-   
-
     db.close()
 
     return book
-
-@app.get("/books",response_model=list[BookResponse])
-def show_books(category: Optional[str] = None, author: Optional[str] = None,available: Optional[bool] = None):
+@app.get("/books", response_model=list[BookResponse])
+def show_books(
+    category: Optional[str] = None,
+    author: Optional[str] = None,
+    available: Optional[bool] = None,
+    skip: int = 0,
+    limit: int = 10,
+    sort_by: Optional[str] = None
+):
     db = SessionLocal()
     query = db.query(Book)
 
@@ -49,8 +46,16 @@ def show_books(category: Optional[str] = None, author: Optional[str] = None,avai
 
     if available is not None:
         query = query.filter(Book.available == available)
+  
 
-    books = query.all()
+    if sort_by == "title":
+        query = query.order_by(Book.title)
+
+    elif sort_by == "year":
+        query = query.order_by(Book.published_year)
+
+    books = query.offset(skip).limit(limit).all()   
+
     db.close()
     return books
 
